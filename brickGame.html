@@ -21,40 +21,56 @@
         var ctx = canvas.getContext("2d");
 
         var x = canvas.width / 2;
-        var y = canvas.height - 22;
+        var y = canvas.height - 30;
+
+        var ball_width = x;
+        var lastBall = 0;
+        var createBall = function (ball_x, ball_y) {
+            this.x = ball_x;
+            this.y = ball_y;
+            this.dx = 0;
+            this.dy = 0;
+            this.visualized = false;
+        }
+
+        var ball = new Array();
+
+        ball[0] = new createBall(x,y);
 
         var ballRadius = 10;
         var spacePressed = false;
+        var upPressed = false;
+        var downPressed = false;
+        var enterPressed = false;
 
         var aimingX;
         var aimingY;
         var aiming = 0.3;
         var checkAiming = 0;
-
-        var dx = 0;
-        var dy = 0;
+        var checkMove = false;
 
         var brickRowCount = 5;
         var brickColumnCount = 13;
-        var brickCurrentColumnCount = 3;
+        var brickCurrentColumnCount = 2;
         var brickWidth = 40;
         var brickHeight = 30;
         var brickPadding = 10;
         var brickOffsetTop = 30;
         var brickOffsetLeft = 30;
         var brickColumnCheck;
-        //var turn = 1;
 
-        var score = 0;
+        var selectMenu = 0;
+
+        var turn = 1;
 
         var bricks = [];
         for (var c = 0; c < brickColumnCount; c++) {
             bricks[c] = [];
             for (var r = 0; r < brickRowCount; r++) {
                 if (c < brickCurrentColumnCount) {
-                    bricks[c][r] = { x: 0, y: 0, status: 1 };
+                    bricks[c][r] = { x: 0, y: 0, status: 1, Life: turn };
                 } else {
-                    bricks[c][r] = { x: 0, y: 0, status: 0 };
+                    bricks[c][r] = { x: 0, y: 0, status: 0, Life: turn };
                 }
             }
         }
@@ -66,6 +82,15 @@
             if (e.keyCode == 32) {
                 spacePressed = true;
             }
+            if (e.keyCode == 38) {
+                upPressed = true;
+            }
+            if (e.keyCode == 40) {
+                downPressed = true;
+            }
+            if (e.keyCode == 13) {
+                enterPressed = true;
+            }
 
         }
 
@@ -73,30 +98,113 @@
             if (e.keyCode == 32) {
                 spacePressed = false;
             }
-
-        }
-
-
-        function mouseMoveHandler(e) {
-            var relativeX = e.clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddleX = relativeX - paddleWidth / 2;
+            if (e.keyCode == 38) {
+                upPressed = false;
             }
+            if (e.keyCode == 40) {
+                downPressed = false;
+            }
+            if (e.keyCode == 13) {
+                enterPressed = false;
+            }
+
+        }
+        function initMenu() {
+            drawMenu();
+        }
+        function drawMenu() {
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawSelection();
+
+            ctx.font = "32px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("GAME START", canvas.width / 2 - 100, 200);
+
+            ctx.font = "32px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("EXIT", canvas.width / 2 - 32, 300);
+
+            if (downPressed) {
+                if (selectMenu < 100)
+                    selectMenu += 100;
+            }
+            if (upPressed) {
+                if (selectMenu >= 100) {
+                    selectMenu -= 100;
+                }
+            }
+
+            if (enterPressed) {
+                if (selectMenu == 0) {
+                    draw();
+                    return;
+                }
+            }
+
+            requestAnimationFrame(drawMenu);
         }
 
-        function collisionDetection() {
+        function drawSelection() {
+            ctx.font = "32px Arial";
+            ctx.fillStyle = "#0095DD";
+
+            ctx.fillText("▶", canvas.width / 2 - 130, 200 + selectMenu);
+        }
+
+        function collisionDetection(ball) {
             for (var c = 0; c < brickCurrentColumnCount; c++) {
                 for (var r = 0; r < brickRowCount; r++) {
                     var b = bricks[c][r];
                     if (b.status == 1) {
-                        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
-                            dy = -dy;
-                            b.status = 0;
-                            score++;
-                            if (score == brickRowCount * brickColumnCount) {
-                                //alert("YOU WIN, CONGRATULATIONS!");
-                                //document.location.reload();
-                                //clearInterval(interval); // Needed for Chrome to end game
+                        var closestX = ball.x;
+                        var closestY = ball.y;
+                        if (ball.x < b.x) {
+                            closestX = b.x;
+                        }
+                        else if (ball.x > b.x + brickWidth) {
+                            closestX = b.x + brickWidth;
+                        }
+                        if (y < b.y) {
+                            closestY = b.y;
+                        }
+                        else if (ball.y > b.y + brickHeight) {
+                            closestY = b.y + brickHeight;
+                        }
+
+                        if (Math.pow(ball.x - closestX, 2) + Math.pow(ball.y - closestY, 2) < Math.pow(ballRadius, 2)) {
+                            if (ball.x < closestX && ball.dx > 0) {
+                                ball.dx = -ball.dx;
+                                b.Life -= 1;
+                                if (b.Life <= 0) {
+                                    b.status = 0;
+                                }
+
+                            }
+                            if (ball.x > closestX && ball.dx < 0) {
+                                ball.dx = -ball.dx;
+                                b.Life -= 1;
+                                if (b.Life <= 0) {
+                                    b.status = 0;
+                                }
+
+                            }
+                            if (ball.y < closestY && ball.dy > 0) {
+                                ball.dy = -ball.dy;
+                                b.Life -= 1;
+                                if (b.Life <= 0) {
+                                    b.status = 0;
+                                }
+
+                            }
+                            if (ball.y > closestY && ball.dy < 0) {
+                                ball.dy = -ball.dy;
+                                b.Life -= 1;
+                                if (b.Life <= 0) {
+                                    b.status = 0;
+                                }
+
                             }
                         }
 
@@ -105,17 +213,26 @@
             }
         }
 
+
+        function drawBallCount() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#FF0000";
+            ctx.fillText("x " + turn, canvas.width - 70, canvas.height - 10);
+        }
         function drawScore() {
             ctx.font = "16px Arial";
-            ctx.fillStyle = "#0095DD";
-            ctx.fillText("Score: " + score, 8, 20);
+            ctx.fillStyle = "#000000";
+            ctx.fillText("Stage: " + turn, 8, 20);
         }
 
-        function drawBall() {
+        function drawBall(ball) {
             ctx.beginPath();
-            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-            ctx.fillStyle = "#0095DD";
+            ctx.arc(ball.x, ball.y, ballRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = "#000000";
+            ctx.setLineDash([0, 0]);
+            ctx.fillStyle = "#FFAA00";
             ctx.fill();
+            ctx.stroke();
             ctx.closePath();
         }
 
@@ -127,10 +244,18 @@
                         var brickY = (c * (brickHeight + brickPadding)) + brickOffsetTop;
                         bricks[c][r].x = brickX;
                         bricks[c][r].y = brickY;
+
                         ctx.beginPath();
                         ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                        ctx.fillStyle = "#FF77AA";
+                        ctx.strokeStyle = "#FF00FF";
+                        ctx.setLineDash([0, 0]);
+                        ctx.fillStyle = "#00DDFF";
                         ctx.fill();
+                        ctx.stroke();
+
+                        ctx.font = "12px";
+                        ctx.fillStyle = "white";
+                        ctx.fillText(bricks[c][r].Life, brickX + brickWidth / 2 - 5, brickY + brickHeight / 2 + 5);
                         ctx.closePath();
                     }
                 }
@@ -138,92 +263,162 @@
         }
 
         function drawAimingLine() {
-            aimingX = canvas.width / 2 - 150 * Math.cos(Math.PI * aiming / 10);
-            aimingY = canvas.height - 20 - 150 * Math.sin(Math.PI * aiming / 10);
+            aimingX = ball_width - 150 * Math.cos(Math.PI * aiming / 10);
+            aimingY = canvas.height - 28 - 150 * Math.sin(Math.PI * aiming / 10);
 
             ctx.beginPath();
-            ctx.strokeStyle="#0095DD";
-            ctx.moveTo(canvas.width / 2, canvas.height - 20);
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = "#FF0022";
+            ctx.moveTo(ball_width, canvas.height - 28);
             ctx.lineTo(aimingX, aimingY);
             ctx.closePath();
             ctx.stroke();
         }
 
-        function draw() {
+        function addBricks() {
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBricks();
-            drawBall();
 
-            if (x == canvas.width / 2 && y == canvas.height - 22) {
-                drawAimingLine();
+            for (var c = brickCurrentColumnCount; c > 0; c--) {
+                for (var r = 0; r < brickRowCount; r++) {
+                    bricks[c][r].status = bricks[c - 1][r].status;
+                    bricks[c][r].Life = bricks[c - 1][r].Life;
+                }
             }
-            drawScore();
-            collisionDetection();
 
+            brickColumnCheck = false;
 
+            for (var r = 0; r < brickRowCount; r++) {
+                var random = Math.random() * 2.5;
+                if (random >= 1) {
+                    bricks[0][r].status = 1;
+                    bricks[0][r].Life = turn;
+                    if (bricks[brickCurrentColumnCount][r].status == 1) {
+                        brickColumnCheck = true;
+                    }
+                }
+                else {
+                    bricks[0][r].status = 0;
+                    bricks[0][r].Life = turn;
+                    if (bricks[brickCurrentColumnCount][r].status == 1) {
+                        brickColumnCheck = true;
+                    }
+                }
+            }
+
+            if (brickColumnCheck) {
+                brickCurrentColumnCount++;
+            }
+        }
+
+        function checkPass() {
             if ((brickCurrentColumnCount == brickColumnCount - 1)) {
                 alert("GAME OVER");
                 document.location.reload();
                 clearInterval(interval);
             }
+        }
 
-            if (x + dx < ballRadius || x + dx > canvas.width - ballRadius) {
-                dx = -dx;
+
+
+        function draw() {
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);       // canvas 를 초기화
+            drawBricks();       // 게임 화면에 벽돌 그리기
+            drawScore();        // 게임 화면에 점수 표시
+
+
+            ball[0].visualized = true;
+            drawBall(ball[0]);
+
+           
+            for (var i = 1; i < turn; i++) {
+                if (ball[i] && Math.pow(ball[i - 1].x - ball_width, 2) + Math.pow(ball[i - 1].y - y, 2) > 60) {
+                    
+                    ball[i].visualized = true;
+                    drawBall(ball[i]);
+                }
             }
-            if (y + dy < ballRadius) {
-                dy = -dy;
-            } else if (y + dy > canvas.height - ballRadius) {
 
-                dx = dy = 0;
-                x = canvas.width / 2;
-                y = canvas.height - 22;
 
-                for (var c = brickCurrentColumnCount; c > 0; c--) {
-                    for (var r = 0; r < brickRowCount; r++) {
-                        bricks[c][r].status = bricks[c - 1][r].status;
+            for (var q = 0; q < turn; q++) {
+                collisionDetection(ball[q]);
+
+                checkPass();
+
+                if (ball[q].x + ball[q].dx < ballRadius || ball[q].x + ball[q].dx > canvas.width - ballRadius) {
+                    ball[q].dx = -ball[q].dx;
+                }
+                if (ball[q].y + ball[q].dy < ballRadius) {
+                    ball[q].dy = -ball[q].dy;
+                } else if (ball[q].y + ball[q].dy > y) {       // 게임화면에서 공이 아래로 떨어졌을 경우
+                   
+                    ball[q].visualized = false;
+                    
+                    var count = 0;
+                    for (var z = 0; z < turn; z++) {
+                        if (!ball[z].visualized)
+                            count++;
+                    }
+                    lastBall = q;
+                    if (count == turn) {
+                        turn++;
+                        
+                        for (var i = 0; i < turn; i++) {
+                            ball_width = ball[lastBall].x;
+                            ball[i] = new createBall(ball_width, y);         // 공의 위치 초기화
+                            ball[i].visualized = false;
+                        }
+                        addBricks();            // 벽돌 한칸 추가
+                        
                     }
                 }
 
-                brickColumnCheck = false;
+            }
 
-                for (var r = 0; r < brickRowCount; r++) {
-                    bricks[0][r].status = 1;
-                    if (bricks[brickCurrentColumnCount][r].status == 1) {
-                        brickColumnCheck = true;
+
+
+            if (ball[0].x == ball_width && ball[0].y == y) {
+
+                if (spacePressed) {         
+                    checkMove = false;           
+                    drawAimingLine();
+                    if (checkAiming == 0) {
+                        aiming += 0.1;
+                    } else {
+                        aiming -= 0.1;
+                    }
+                    if (aiming >= 9.7) checkAiming += 1;
+                    if (aiming <= 0.3) checkAiming -= 1;
+
+                    ball[0].dx = - 7 * Math.cos(Math.PI * aiming / 10);
+                    ball[0].dy = - 7 * Math.sin(Math.PI * aiming / 10);
+                    for (var t = 1; t < turn; t++) {
+                        if (ball[t]) {
+                            ball[t].dx = ball[0].dx;
+                            ball[t].dy = ball[0].dy;
+                        }
                     }
                 }
-
-                if (brickColumnCheck) {
-                    brickCurrentColumnCount++;
+            }
+            if(!spacePressed) checkMove = true;
+            
+            if (checkMove) {        
+                for (var j = 0; j < turn; j++) {
+                    if (ball[j] && ball[j].visualized) {
+                        if (ball[j].dx != 0 && ball[j].dy != 0) {
+                            ball[j].x += ball[j].dx;
+                            ball[j].y += ball[j].dy;
+                        }
+                    }
                 }
-
+                
             }
 
-            if (checkAiming == 0) {
-                aiming += 0.1;
-            } else {
-                aiming -= 0.1;
-            }
-            if (aiming >= 9.7) checkAiming += 1;
-            if (aiming <= 0.3) checkAiming -= 1;
-
-
-            if (spacePressed) {
-                dx = - 7 * Math.cos(Math.PI * aiming / 10);
-                dy = - 7 * Math.sin(Math.PI * aiming / 10);
-            }
-            if (!spacePressed) {
-                if (dx != 0 && dy != 0) {
-                    x += dx;
-                    y += dy;
-                }
-            }
-
+            drawBallCount();    // 게임 화면에 공 개수 표시
             requestAnimationFrame(draw);
         }
 
-        draw();
+        initMenu();
 
     </script>
 </body>
