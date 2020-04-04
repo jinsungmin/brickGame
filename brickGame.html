@@ -35,7 +35,7 @@
 
         var ball = new Array();
 
-        ball[0] = new createBall(x,y);
+        ball[0] = new createBall(x, y);
 
         var ballRadius = 10;
         var spacePressed = false;
@@ -318,8 +318,8 @@
             }
         }
 
-
-
+        var firstTouch = -1;
+        var firstBall;
         function draw() {
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);       // canvas 를 초기화
@@ -330,10 +330,10 @@
             ball[0].visualized = true;
             drawBall(ball[0]);
 
-           
-            for (var i = 1; i < turn; i++) {
+
+            for (let i = 1; i < turn; i++) {
                 if (ball[i] && Math.pow(ball[i - 1].x - ball_width, 2) + Math.pow(ball[i - 1].y - y, 2) > 60) {
-                    
+
                     ball[i].visualized = true;
                     drawBall(ball[i]);
                 }
@@ -350,26 +350,45 @@
                 }
                 if (ball[q].y + ball[q].dy < ballRadius) {
                     ball[q].dy = -ball[q].dy;
+                } else if (ball[q].y + ball[q].dy > y && firstTouch == -1) {
+                    firstBall = q;
+                    firstTouch = 1;
                 } else if (ball[q].y + ball[q].dy > y) {       // 게임화면에서 공이 아래로 떨어졌을 경우
-                   
+
                     ball[q].visualized = false;
-                    
+
+                    /*
+                    if (firstTouch == 1) {
+                        ball[q].dy = 0;
+                        if (ball[q].x > ball[firstBall].x) {
+                            alert(q);
+                            ball[q].dx = -1;
+                        } else if (ball[q].x < ball[firstBall].x) {
+                            alert(q);
+                            ball[q].dx = 1;
+                        } else {
+                            ball[q].dx = 0;
+                        }
+                        if (ball[q].dx != 0) {
+                            ball[q].x += ball[q].dx;
+                        }
+                    }
+                    */
                     var count = 0;
-                    for (var z = 0; z < turn; z++) {
-                        if (!ball[z].visualized)
+                    for (let i = 0; i < turn; i++) {
+                        if (!ball[i].visualized)
                             count++;
                     }
-                    lastBall = q;
+
                     if (count == turn) {
                         turn++;
-                        
-                        for (var i = 0; i < turn; i++) {
-                            ball_width = ball[lastBall].x;
+                        for (let i = 0; i < turn; i++) {
+                            ball_width = ball[firstBall].x;
                             ball[i] = new createBall(ball_width, y);         // 공의 위치 초기화
                             ball[i].visualized = false;
                         }
                         addBricks();            // 벽돌 한칸 추가
-                        
+
                     }
                 }
 
@@ -378,9 +397,8 @@
 
 
             if (ball[0].x == ball_width && ball[0].y == y) {
-
-                if (spacePressed) {         
-                    checkMove = false;           
+                if (spacePressed) {
+                    checkMove = false;
                     drawAimingLine();
                     if (checkAiming == 0) {
                         aiming += 0.1;
@@ -390,20 +408,18 @@
                     if (aiming >= 9.7) checkAiming += 1;
                     if (aiming <= 0.3) checkAiming -= 1;
 
-                    ball[0].dx = - 7 * Math.cos(Math.PI * aiming / 10);
-                    ball[0].dy = - 7 * Math.sin(Math.PI * aiming / 10);
-                    for (var t = 1; t < turn; t++) {
-                        if (ball[t]) {
-                            ball[t].dx = ball[0].dx;
-                            ball[t].dy = ball[0].dy;
+                    for (let k = 0; k < turn; k++) {
+                        if (ball[k]) {
+                            ball[k].dx = - 7 * Math.cos(Math.PI * aiming / 10);
+                            ball[k].dy = - 7 * Math.sin(Math.PI * aiming / 10);
                         }
                     }
                 }
             }
-            if(!spacePressed) checkMove = true;
-            
-            if (checkMove) {        
-                for (var j = 0; j < turn; j++) {
+            if (!spacePressed) checkMove = true;
+
+            if (checkMove) {
+                for (let j = 0; j < turn; j++) {
                     if (ball[j] && ball[j].visualized) {
                         if (ball[j].dx != 0 && ball[j].dy != 0) {
                             ball[j].x += ball[j].dx;
@@ -411,7 +427,7 @@
                         }
                     }
                 }
-                
+
             }
 
             drawBallCount();    // 게임 화면에 공 개수 표시
@@ -421,6 +437,8 @@
         initMenu();
 
     </script>
+    <script type="text/javascript" src="cordova.js"></script>
+    <script type="js/jqeury-3.4.1.min.js"></script>
 </body>
 
 </html>
